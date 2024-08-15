@@ -83,6 +83,11 @@ const ProductList = () => {
 
     return (
         <View style={styles.container}>
+            <View style={{padding:20, alignItems:'center', backgroundColor:'lightblue'}}>
+                <Text style={{color:'black'}}>
+                    Shopping
+                </Text>
+            </View>
             <FlatList
                 data={products}
                 keyExtractor={(item) => item.id.toString()}
@@ -124,19 +129,20 @@ const App = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: 10,
+        // paddingHorizontal: 10,
         backgroundColor: '#f8f9fa',
     },
     itemContainer: {
         padding: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#dee2e6',
+        borderWidth: 1,
+        borderColor: '#dee2e6',
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         backgroundColor: '#fff',
         borderRadius: 10,
         marginVertical: 5,
+        marginHorizontal: 10,
     },
     itemTextContainer: {
         flex: 1,
