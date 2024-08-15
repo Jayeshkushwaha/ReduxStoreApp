@@ -1,118 +1,233 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, Modal, Button, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { Provider, useDispatch, useSelector } from 'react-redux';
+import store from './src/redux/store';
+import { addToCart, incrementQuantity, decrementQuantity } from './src/redux/actions';
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+const ProductList = () => {
+    const [products, setProducts] = useState([]);
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const dispatch = useDispatch();
+    const cart = useSelector(state => state.cart);
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+    useEffect(() => {
+        // Fetching products from the fake store API
+        fetch('https://fakestoreapi.com/products')
+            .then(response => response.json())
+            .then(data => setProducts(data))
+            .catch(error => console.error(error));
+    }, []);
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+    const openModal = (product) => {
+        setSelectedProduct(product);
+    };
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+    const closeModal = () => {
+        setSelectedProduct(null);
+    };
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+    const addToCartHandler = () => {
+        const productInCart = cart.find(item => item.id === selectedProduct.id);
+        if (productInCart) {
+            dispatch(incrementQuantity(selectedProduct.id));
+        } else {
+            dispatch(addToCart({ ...selectedProduct, quantity: 1 }));
+        }
+        closeModal();
+    };
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+    const incrementHandler = (id) => {
+        dispatch(incrementQuantity(id));
+    };
 
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+    const decrementHandler = (id) => {
+        const productInCart = cart.find(item => item.id === id);
+        if (productInCart.quantity === 1) {
+            dispatch(decrementQuantity(id)); // This will remove the product from the cart
+        } else if (productInCart.quantity > 1) {
+            dispatch(decrementQuantity(id));
+        }
+    };
+
+    const renderItem = ({ item }) => {
+        const productInCart = cart.find(cartItem => cartItem.id === item.id);
+
+        return (
+            <View style={styles.itemContainer}>
+                <View style={styles.itemTextContainer}>
+                    <Text style={styles.itemText}>{item.title}</Text>
+                    <Text style={styles.itemPrice}>${item.price}</Text>
+                </View>
+
+                {productInCart && productInCart.quantity > 0 ? (
+                    <View style={styles.cartActions}>
+                        <TouchableOpacity onPress={() => decrementHandler(item.id)} style={styles.cartButton}>
+                            <Text style={styles.cartButtonText}>-</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.quantityText}>{productInCart.quantity}</Text>
+                        <TouchableOpacity onPress={() => incrementHandler(item.id)} style={styles.cartButton}>
+                            <Text style={styles.cartButtonText}>+</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <TouchableOpacity onPress={() => openModal(item)} style={styles.addButton}>
+                        <Text style={styles.addButtonText}>Add to Cart</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+        );
+    };
+
+    return (
+        <View style={styles.container}>
+            <FlatList
+                data={products}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderItem}
+            />
+            {selectedProduct && (
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={true}
+                    onRequestClose={closeModal}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalView}>
+                            <Text style={styles.modalText}>{selectedProduct.title}</Text>
+                            <Image source={{ uri: selectedProduct.image }} style={styles.image} />
+                            <Text style={styles.modalDescription}>{selectedProduct.description}</Text>
+                            <Text style={styles.modalPrice}>${selectedProduct.price}</Text>
+                            <View style={styles.modalButtons}>
+                                <Button title="Add to Cart" onPress={addToCartHandler} />
+                                <Button title="Close" onPress={closeModal} />
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+            )}
         </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
+    );
+};
+
+const App = () => {
+    return (
+        <Provider store={store}>
+            <ProductList />
+        </Provider>
+    );
+};
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
+    container: {
+        flex: 1,
+        paddingTop: 50,
+        paddingHorizontal: 10,
+        backgroundColor: '#f8f9fa',
+    },
+    itemContainer: {
+        padding: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#dee2e6',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        marginVertical: 5,
+    },
+    itemTextContainer: {
+        flex: 1,
+    },
+    itemText: {
+        fontSize: 18,
+        fontWeight: '500',
+        color: '#343a40',
+    },
+    itemPrice: {
+        fontSize: 16,
+        fontWeight: '400',
+        color: '#6c757d',
+        marginTop: 5,
+    },
+    cartActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    cartButton: {
+        backgroundColor: '#ced4da',
+        padding: 5,
+        borderRadius: 5,
+        marginHorizontal: 5,
+    },
+    cartButtonText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#495057',
+    },
+    quantityText: {
+        fontSize: 18,
+        color: '#495057',
+    },
+    addButton: {
+        backgroundColor: '#007bff',
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 5,
+    },
+    addButtonText: {
+        color: 'white',
+        fontSize: 16,
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalView: {
+        margin: 20,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 35,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    modalText: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        textAlign: 'center',
+    },
+    modalDescription: {
+        fontSize: 16,
+        textAlign: 'center',
+        marginBottom: 15,
+        color: '#495057',
+    },
+    modalPrice: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#007bff',
+        marginBottom: 20,
+    },
+    image: {
+        width: 150,
+        height: 150,
+        marginBottom: 20,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
 });
 
 export default App;
