@@ -53,13 +53,13 @@ const ProductList = () => {
         const productInCart = cart.find(cartItem => cartItem.id === item.id);
 
         return (
-            <View style={styles.itemContainer}>
+            <TouchableOpacity style={styles.itemContainer} onPress={() => openModal(item)}>
                 <View style={styles.itemTextContainer}>
                     <Text style={styles.itemText}>{item.title}</Text>
                     <Text style={styles.itemPrice}>${item.price}</Text>
                 </View>
 
-                {productInCart && productInCart.quantity > 0 ? (
+                {productInCart && productInCart.quantity > 0 && (
                     <View style={styles.cartActions}>
                         <TouchableOpacity onPress={() => decrementHandler(item.id)} style={styles.cartButton}>
                             <Text style={styles.cartButtonText}>-</Text>
@@ -69,12 +69,15 @@ const ProductList = () => {
                             <Text style={styles.cartButtonText}>+</Text>
                         </TouchableOpacity>
                     </View>
-                ) : (
-                    <TouchableOpacity onPress={() => openModal(item)} style={styles.addButton}>
-                        <Text style={styles.addButtonText}>Add to Cart</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
+                ) 
+                // : 
+                // (
+                //     <TouchableOpacity onPress={() => openModal(item)} style={styles.addButton}>
+                //         <Text style={styles.addButtonText}>Add to Cart</Text>
+                //     </TouchableOpacity>
+                // )
+                }
+            </TouchableOpacity>
         );
     };
 
@@ -121,7 +124,6 @@ const App = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: 50,
         paddingHorizontal: 10,
         backgroundColor: '#f8f9fa',
     },
