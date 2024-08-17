@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Modal, Button, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Modal, Button, TouchableOpacity, Image, StyleSheet, SafeAreaView } from 'react-native';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import store from './src/redux/store';
 import { addToCart, incrementQuantity, decrementQuantity } from './src/redux/actions';
@@ -11,11 +11,15 @@ const ProductList = () => {
     const cart = useSelector(state => state.cart);
 
     useEffect(() => {
-        // Fetching products from the fake store API
         fetch('https://fakestoreapi.com/products')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => setProducts(data))
-            .catch(error => console.error(error));
+            .catch(error => console.error('Fetch error:', error));
     }, []);
 
     const openModal = (product) => {
@@ -54,9 +58,12 @@ const ProductList = () => {
 
         return (
             <TouchableOpacity style={styles.itemContainer} onPress={() => openModal(item)}>
-                <View style={styles.itemTextContainer}>
-                    <Text style={styles.itemText}>{item.title}</Text>
-                    <Text style={styles.itemPrice}>${item.price}</Text>
+                <View style={styles.itemContent}>
+                    <Image resizeMode='contain' source={{ uri: item.image }} style={styles.image} />
+                    <View style={styles.itemTextContainer}>
+                        <Text style={styles.itemText}>{item.title}</Text>
+                        <Text style={styles.itemPrice}>${item.price}</Text>
+                    </View>
                 </View>
 
                 {productInCart && productInCart.quantity > 0 && (
@@ -69,24 +76,15 @@ const ProductList = () => {
                             <Text style={styles.cartButtonText}>+</Text>
                         </TouchableOpacity>
                     </View>
-                ) 
-                // : 
-                // (
-                //     <TouchableOpacity onPress={() => openModal(item)} style={styles.addButton}>
-                //         <Text style={styles.addButtonText}>Add to Cart</Text>
-                //     </TouchableOpacity>
-                // )
-                }
+                )}
             </TouchableOpacity>
         );
     };
 
     return (
-        <View style={styles.container}>
-            <View style={{padding:20, alignItems:'center', backgroundColor:'lightblue'}}>
-                <Text style={{color:'black'}}>
-                    Shopping
-                </Text>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.headerText}>Shopping</Text>
             </View>
             <FlatList
                 data={products}
@@ -103,18 +101,22 @@ const ProductList = () => {
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalView}>
                             <Text style={styles.modalText}>{selectedProduct.title}</Text>
-                            <Image source={{ uri: selectedProduct.image }} style={styles.image} />
+                            <Image resizeMode='contain' source={{ uri: selectedProduct.image }} style={styles.modalImage} />
                             <Text style={styles.modalDescription}>{selectedProduct.description}</Text>
                             <Text style={styles.modalPrice}>${selectedProduct.price}</Text>
                             <View style={styles.modalButtons}>
-                                <Button title="Add to Cart" onPress={addToCartHandler} />
-                                <Button title="Close" onPress={closeModal} />
+                                <TouchableOpacity style={styles.addButton} onPress={addToCartHandler}>
+                                    <Text style={styles.addButtonText}>Add to Cart</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.addButton} onPress={closeModal}>
+                                    <Text style={styles.addButtonText}>Close</Text>
+                                </TouchableOpacity>
                             </View>
                         </View>
                     </View>
                 </Modal>
             )}
-        </View>
+        </SafeAreaView>
     );
 };
 
@@ -129,8 +131,17 @@ const App = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        // paddingHorizontal: 10,
         backgroundColor: '#f8f9fa',
+    },
+    header: {
+        padding: 20,
+        alignItems: 'center',
+        backgroundColor: '#007bff',
+    },
+    headerText: {
+        color: '#fff',
+        fontSize: 22,
+        fontWeight: 'bold',
     },
     itemContainer: {
         padding: 15,
@@ -144,8 +155,14 @@ const styles = StyleSheet.create({
         marginVertical: 5,
         marginHorizontal: 10,
     },
+    itemContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
     itemTextContainer: {
         flex: 1,
+        marginLeft: 10,
     },
     itemText: {
         fontSize: 18,
@@ -164,28 +181,31 @@ const styles = StyleSheet.create({
     },
     cartButton: {
         backgroundColor: '#ced4da',
-        padding: 5,
+        padding: 8,
         borderRadius: 5,
         marginHorizontal: 5,
     },
     cartButtonText: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
         color: '#495057',
     },
     quantityText: {
         fontSize: 18,
         color: '#495057',
+        marginHorizontal: 10,
     },
     addButton: {
         backgroundColor: '#007bff',
-        paddingVertical: 5,
-        paddingHorizontal: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
         borderRadius: 5,
+        marginHorizontal: 5,
     },
     addButtonText: {
-        color: 'white',
+        color: '#fff',
         fontSize: 16,
+        textAlign: 'center',
     },
     modalOverlay: {
         flex: 1,
@@ -227,6 +247,11 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     image: {
+        width: 70,
+        height: 70,
+        borderRadius: 5,
+    },
+    modalImage: {
         width: 150,
         height: 150,
         marginBottom: 20,
